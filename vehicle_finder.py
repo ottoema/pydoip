@@ -4,9 +4,7 @@ import socket
 from doip.doip import DoIP_Header
 from doip.doip import DoIP_Handler
 
-class Tester_Connection_Handler(object):
-
-
+class Vehicle_Finder(object):
 
     def __init__(self,port):
         self.doip_handler = DoIP_Handler()
