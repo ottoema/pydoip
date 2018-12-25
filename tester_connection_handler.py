@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
 import socket
-from doip.doip_header import DoIP_header
-from doip.doip_handler import DoIP_Handler
+from doip.doip import DoIP_Header
+from doip.doip import DoIP_Handler
 
 class Tester_Connection_Handler(object):
 
