@@ -2,7 +2,7 @@
 
 import socket
 from doip.doip import DoIP_Header
-from doip.doip import DoIP_Handler
+from doip.handlers import DoIP_Handler
 
 class Vehicle_Finder(object):
 

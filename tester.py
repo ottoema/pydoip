@@ -17,8 +17,6 @@ class Tester(object):
         self.vehicle_finder.receive()
         # Present list of vehicle..
 
-
-
 def main():
     tester = Tester()
     tester.start()

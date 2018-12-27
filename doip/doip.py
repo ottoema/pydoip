@@ -35,33 +35,17 @@ class DoIP_Header(object):
     payload_length = 0
     payload_type_specific_message_content = 0
 
-    def __init__(self,protocol_version,payload_type,payload_length,payload_type_specific_message_content):
+    def __init__(self,protocol_version,inverse_protocol_version,payload_type,payload_length,payload_type_specific_message_content):
         
         if (isinstance(protocol_version,DoIP_protocol_version) and
-            isinstance(payload_type,DoIP_payload_type)):        
+            isinstance(payload_type,DoIP_payload_type)):   
+
             self.protocol_version = protocol_version        
             self.inverse_protocol_version = ~protocol_version.value
             self.payload_type = payload_type
             self.payload_type_specific_message_content = payload_type_specific_message_content
         else:
             raise ValueError("DoIP header, invalid type.")
-
-    def __init__(self,data):
-        print(data[0:7].hex())
-        self.protocol_version = DoIP_protocol_version(self.bytes_to_int(data[0:1]))
-        self.inverse_protocol_version = self.bytes_to_int(data[1:2])
-
-        #if (not self.protocol_version.value == ~self.inverse_protocol_version):
-        #    raise ValueError("DoIP header, invalid protocol version or inverse.")
-        #print(int(data[2:4].hex())) #how to convert binary to dec?
-        self.payload_type = DoIP_payload_type(self.bytes_to_int(data[2:4]))
-        self.payload_length = self.bytes_to_int(data[4:7])
-        self.payload_type_specific_message_content = data[8:]
-        
-    def bytes_to_int(self,data, order='big',sign=False):
-        return int.from_bytes(data,byteorder='big')
-
-    #def to_bytes(self):
 
 class DoIP_Protocol(object):
 
@@ -71,10 +55,3 @@ class DoIP_Protocol(object):
 
     def __init__(self):
         print("""I'm DOIP""")
-
-class DoIP_Handler(object):
-    
-    def decode_header(self, data):
-        return DoIP_Header(data)
-
-    #def encode_header():
