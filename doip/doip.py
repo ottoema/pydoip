@@ -18,6 +18,7 @@ class DoIP_payload_type(Enum):
     Routing_activation_request = 0x0005
     Routing_activation_response = 0x0006
     Alive_check_request = 0x0007
+    Alive_check_response = 0x0008
     DoIP_entity_status_request = 0x4001
     DoIP_entity_status_response = 0x4002
     Diagnostic_power_mode_information_request = 0x4003
@@ -36,7 +37,7 @@ class Generic_DoIP_NACK_codes(Enum):
 class DoIP_Header(object):
 
 
-    def __init__(self,protocol_version,inverse_protocol_version,payload_type,payload_length,payload_type_specific_message_content):
+    def __init__(self,protocol_version,inverse_protocol_version,payload_type,payload_length):
         
         if (isinstance(protocol_version,DoIP_protocol_version) and
             isinstance(payload_type,DoIP_payload_type)):   
@@ -45,12 +46,13 @@ class DoIP_Header(object):
             self.inverse_protocol_version = ~protocol_version.value
             self.payload_type = payload_type
             self.payload_length = payload_length
-            self.payload_type_specific_message_content = payload_type_specific_message_content
+            #self.payload_type_specific_message_content = payload_type_specific_message_content
         else:
             raise ValueError("DoIP header, invalid type.")
 
     def __eq__(self,other):
-        if (    self.protocol_version == other.protocol_version and
+        if (isinstance(other,DoIP_Header) and    
+                self.protocol_version == other.protocol_version and
                 self.inverse_protocol_version == other.inverse_protocol_version and
                 self.payload_type == other.payload_type and
                 self.payload_length == other.payload_length):
@@ -58,7 +60,8 @@ class DoIP_Header(object):
         return False
 
     def __ne__(self,other):
-        if (    self.protocol_version == other.protocol_version and
+        if (isinstance(other,DoIP_Header) and 
+                self.protocol_version == other.protocol_version and
                 self.inverse_protocol_version == other.inverse_protocol_version and
                 self.payload_type == other.payload_type and
                 self.payload_length == other.payload_length):

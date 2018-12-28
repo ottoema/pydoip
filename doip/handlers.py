@@ -2,8 +2,11 @@
 
 from doip.doip import DoIP_Header, DoIP_protocol_version, DoIP_payload_type, DoIP_Protocol, Generic_DoIP_NACK_codes
 import socket
+import sys
 
 class DoIP_Header_Handler(object):
+
+    MAXIMUM_PROCESSABLE_LENGTH = sys.maxsize
 
     def __init__(self,supported_doip_version,supported_payload_types):
         self.supported_doip_version = supported_doip_version
@@ -19,44 +22,54 @@ class DoIP_Header_Handler(object):
         payload_type_specific_message_content = data[8:]
 
         if not self._check_generic_doip_synchronization_pattern(protocol_version,inverse_protocol_version):
-            #Send generic DoIP header NACK (NACK code)
-            return Generic_DoIP_NACK_codes.Incorrect_pattern_format
+            return Generic_DoIP_NACK_codes.Incorrect_pattern_format, 0
             
-        if not self._check_payload_type(DoIP_payload_type(payload_type)):
-            #Send generic DoIP header NACK (NACK code)
-            return Generic_DoIP_NACK_codes.Unknown_payload_type
+        if not self._check_payload_type(payload_type):
+            return Generic_DoIP_NACK_codes.Unknown_payload_type, 0
 
-        if not self._check_whether_the_message_length_exceeds_the_maximum_processable_length():
+        if not self._check_whether_the_message_length_exceeds_the_maximum_processable_length(payload_length):
             #Send generic DoIP header NACK (NACK code)
-            return Generic_DoIP_NACK_codes.Message_too_large
+            return Generic_DoIP_NACK_codes.Message_too_large, 0
 
         if not self._check_current_doip_protocol_handler_memory():
             #Send generic DoIP header NACK (NACK code)
-            return Generic_DoIP_NACK_codes.Out_of_memory
+            return Generic_DoIP_NACK_codes.Out_of_memory, 0
 
-        if not self._check_payload_type_specific_length():
-            return Generic_DoIP_NACK_codes.Invalid_payload_length
+        if not self._check_payload_type_specific_length(payload_type,payload_length):
+            return Generic_DoIP_NACK_codes.Invalid_payload_length, 0
 
-        return DoIP_Header( DoIP_protocol_version(protocol_version),
+        return  DoIP_Header( DoIP_protocol_version(protocol_version),
                             inverse_protocol_version,
                             DoIP_payload_type(payload_type),
-                            payload_length,
-                            payload_type_specific_message_content)
+                            payload_length), payload_type_specific_message_content
 
     def _check_generic_doip_synchronization_pattern(self,version,inverse):
         return version + inverse == 255
 
     def _check_payload_type(self,payload_type):
-        return payload_type in DoIP_payload_type
+        try:
+            return DoIP_payload_type(payload_type) in DoIP_payload_type
+        except ValueError:
+            return False
 
-    def _check_whether_the_message_length_exceeds_the_maximum_processable_length(self):
-        return True
+    def _check_whether_the_message_length_exceeds_the_maximum_processable_length(self,length):
+        return length < self.MAXIMUM_PROCESSABLE_LENGTH
 
-    def _check_payload_type_specific_length(self):
-        return True
-       
     def _check_current_doip_protocol_handler_memory(self):
+        # No sense in implementing this at the moment. 
+        # Maybe use this: https://airbrake.io/blog/python-exception-handling/memoryerror
         return True
+    
+    def _check_payload_type_specific_length(self,payload_type,length):
+        
+        payload_type = DoIP_payload_type(payload_type)
+        
+        if (payload_type == DoIP_payload_type.Generic_DoIP_header_negative_Acknowledge and not length == 0):
+            return False
+        if (payload_type == DoIP_payload_type.Vehicle_announcement_message__vehicle_identification_response_message and not length == 32):
+            return False
+        return True
+    
 
 class DoIP_Handler(object): 
 
@@ -90,7 +103,7 @@ class DoIP_Handler(object):
         print('received {} bytes from {}'.format(
             len(data), address))
         
-        header = self.header_handler.decode_header(data)
+        header, payload = self.header_handler.decode_header(data)
 
         if (header in Generic_DoIP_NACK_codes):
             _handle_generic_doip_nack(header)
