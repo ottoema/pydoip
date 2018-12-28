@@ -26,14 +26,15 @@ class DoIP_payload_type(Enum):
     Diagnostic_message_positive_acknowledgement = 0x8002
     Diagnostic_message_negative_acknowledgement = 0x8003
 
+class Generic_DoIP_NACK_codes(Enum):
+    Incorrect_pattern_format = 0x00
+    Unknown_payload_type = 0x01
+    Message_too_large = 0x02
+    Out_of_memory = 0x03
+    Invalid_payload_length = 0x04
 
 class DoIP_Header(object):
 
-    protocol_version = 0
-    inverse_protocol_version = 0
-    payload_type = 0
-    payload_length = 0
-    payload_type_specific_message_content = 0
 
     def __init__(self,protocol_version,inverse_protocol_version,payload_type,payload_length,payload_type_specific_message_content):
         
@@ -43,9 +44,26 @@ class DoIP_Header(object):
             self.protocol_version = protocol_version        
             self.inverse_protocol_version = ~protocol_version.value
             self.payload_type = payload_type
+            self.payload_length = payload_length
             self.payload_type_specific_message_content = payload_type_specific_message_content
         else:
             raise ValueError("DoIP header, invalid type.")
+
+    def __eq__(self,other):
+        if (    self.protocol_version == other.protocol_version and
+                self.inverse_protocol_version == other.inverse_protocol_version and
+                self.payload_type == other.payload_type and
+                self.payload_length == other.payload_length):
+            return True
+        return False
+
+    def __ne__(self,other):
+        if (    self.protocol_version == other.protocol_version and
+                self.inverse_protocol_version == other.inverse_protocol_version and
+                self.payload_type == other.payload_type and
+                self.payload_length == other.payload_length):
+            return False
+        return True
 
 class DoIP_Protocol(object):
 

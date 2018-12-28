@@ -1,20 +1,82 @@
 #!/usr/bin/python3
 
-from doip.doip import DoIP_Header
-from doip.doip import DoIP_protocol_version
-from doip.doip import DoIP_payload_type
-from doip.doip import DoIP_Protocol
+from doip.doip import DoIP_Header, DoIP_protocol_version, DoIP_payload_type, DoIP_Protocol, Generic_DoIP_NACK_codes
 import socket
 
+class DoIP_Header_Handler(object):
 
-class DoIP_Handler(object):
+    def __init__(self,supported_doip_version,supported_payload_types):
+        self.supported_doip_version = supported_doip_version
+        self.supported_payload_types = supported_payload_types
 
-    supported_doip_version = DoIP_protocol_version.DoIPISO1340022012       
+    def decode_header(self, data):
+        import struct
+        #print(data.hex())
+        protocol_version = struct.unpack('>B',data[0:1])[0]
+        inverse_protocol_version = struct.unpack('>B',data[1:2])[0]
+        payload_type = struct.unpack('>H',data[2:4])[0]
+        payload_length = struct.unpack('>I',data[4:8])[0]
+        payload_type_specific_message_content = data[8:]
+
+        if not self._check_generic_doip_synchronization_pattern(protocol_version,inverse_protocol_version):
+            #Send generic DoIP header NACK (NACK code)
+            return Generic_DoIP_NACK_codes.Incorrect_pattern_format
+            
+        if not self._check_payload_type(DoIP_payload_type(payload_type)):
+            #Send generic DoIP header NACK (NACK code)
+            return Generic_DoIP_NACK_codes.Unknown_payload_type
+
+        if not self._check_whether_the_message_length_exceeds_the_maximum_processable_length():
+            #Send generic DoIP header NACK (NACK code)
+            return Generic_DoIP_NACK_codes.Message_too_large
+
+        if not self._check_current_doip_protocol_handler_memory():
+            #Send generic DoIP header NACK (NACK code)
+            return Generic_DoIP_NACK_codes.Out_of_memory
+
+        if not self._check_payload_type_specific_length():
+            return Generic_DoIP_NACK_codes.Invalid_payload_length
+
+        return DoIP_Header( DoIP_protocol_version(protocol_version),
+                            inverse_protocol_version,
+                            DoIP_payload_type(payload_type),
+                            payload_length,
+                            payload_type_specific_message_content)
+
+    def _check_generic_doip_synchronization_pattern(self,version,inverse):
+        return version + inverse == 255
+
+    def _check_payload_type(self,payload_type):
+        return payload_type in DoIP_payload_type
+
+    def _check_whether_the_message_length_exceeds_the_maximum_processable_length(self):
+        return True
+
+    def _check_payload_type_specific_length(self):
+        return True
+       
+    def _check_current_doip_protocol_handler_memory(self):
+        return True
+
+class DoIP_Handler(object): 
+
+    supported_doip_version = DoIP_protocol_version.DoIPISO1340022012
+    supported_payload_types = [DoIP_payload_type.Vehicle_announcement_message__vehicle_identification_response_message]   
 
     def __init__(self,tester=True):
+
         if (not tester):
             print ("DoIP entity not supported, only tester")
             raise 
+
+        self._generic_doip_nack_handlers =   {Generic_DoIP_NACK_codes.Incorrect_pattern_format : self._handle_incorrect_pattern_format,
+                                     Generic_DoIP_NACK_codes.Unknown_payload_type : self._handle_unknown_payload_type,
+                                     Generic_DoIP_NACK_codes.Message_too_large : self._handle_message_too_large,
+                                     Generic_DoIP_NACK_codes.Out_of_memory : self._handle_out_of_memory,
+                                     Generic_DoIP_NACK_codes.Invalid_payload_length : self._handle_invalid_payload_length}
+
+
+        self.header_handler = DoIP_Header_Handler(self.supported_doip_version,self.supported_payload_types)
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server_address = ('10.0.2.15', DoIP_Protocol.UDP_DISCOVERY)
@@ -28,7 +90,10 @@ class DoIP_Handler(object):
         print('received {} bytes from {}'.format(
             len(data), address))
         
-        header = self.decode_header(data)
+        header = self.header_handler.decode_header(data)
+
+        if (header in Generic_DoIP_NACK_codes):
+            _handle_generic_doip_nack(header)
         
         print("DoIP header:")
         print("DoIP_protocol_version: " + header.protocol_version.name)
@@ -40,24 +105,35 @@ class DoIP_Handler(object):
 
         # TODO: decode VA
 
-   # def get_available_vehicles(self):
-    
-    def decode_header(self, data):
+    def _handle_generic_doip_nack(self,nack_code):
+        _handle_generic_doip_nack[nack_code]()
 
-        protocol_version = DoIP_protocol_version(self._bytes_to_int(data[0:1]))
-        inverse_protocol_version = self._bytes_to_int(data[1:2])
+    def _handle_incorrect_pattern_format(self):
+        #Send generic DoIP header NACK (NACK code)
+        #Close socket
+        #ExitPoint - Socket has been closed
+        pass
 
-        #if (not self.protocol_version.value == ~self.inverse_protocol_version):
-        #    raise ValueError("DoIP header, invalid protocol version or inverse.")
-        #print(int(data[2:4].hex())) #how to convert binary to dec?
-        payload_type = DoIP_payload_type(self._bytes_to_int(data[2:4]))
-        payload_length = self._bytes_to_int(data[4:7])
-        payload_type_specific_message_content = data[8:]
+    def _handle_unknown_payload_type(self):
+        #Send generic DoIP header NACK (NACK code)
+        #Read and discard payload length bytes
+        #ExitPoint - Message discarded
+        pass
 
-        return DoIP_Header(protocol_version,inverse_protocol_version,payload_type,payload_length,payload_type_specific_message_content)
-        
-    def _bytes_to_int(self,data, order='big',sign=False):
-        return int.from_bytes(data,byteorder='big')
-        return DoIP_Header(data)
+    def _handle_message_too_large(self):
+        #Send generic DoIP header NACK (NACK code)
+        #Read and discard payload length bytes
+        #ExitPoint - Message discarded
+        pass
 
-    #def encode_header():
+    def _handle_out_of_memory(self):
+        #Send generic DoIP header NACK (NACK code)
+        #Read and discard payload length bytes
+        #ExitPoint - Message discarded
+        pass
+
+    def _handle_invalid_payload_length(self):
+        #Send generic DoIP header NACK (NACK code)
+        #Close socket
+        #ExitPoint - Socket has been closed        
+        pass
