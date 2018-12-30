@@ -39,7 +39,6 @@ class DoIP_Header_Handler(object):
             return Generic_DoIP_NACK_codes.Invalid_payload_length, 0
 
         return  DoIP_Header( DoIP_protocol_version(protocol_version),
-                            inverse_protocol_version,
                             DoIP_payload_type(payload_type),
                             payload_length), payload_type_specific_message_content
 

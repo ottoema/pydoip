@@ -37,7 +37,7 @@ class Generic_DoIP_NACK_codes(Enum):
 class DoIP_Header(object):
 
 
-    def __init__(self,protocol_version,inverse_protocol_version,payload_type,payload_length):
+    def __init__(self,protocol_version,payload_type,payload_length):
         
         if (isinstance(protocol_version,DoIP_protocol_version) and
             isinstance(payload_type,DoIP_payload_type)):   
