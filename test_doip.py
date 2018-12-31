@@ -3,6 +3,45 @@
 from doip.handlers import DoIP_Handler, DoIP_Header_Handler
 from doip.doip import DoIP_Header, DoIP_protocol_version, DoIP_payload_type, DoIP_Protocol, Generic_DoIP_NACK_codes
 import unittest
+import threading
+
+class TesterThread(threading.Thread):
+
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.doip_handler = DoIP_Handler()
+
+    def run(self):
+        self.doip_handler.get_vehicle_announcements()
+
+class Test_DoIP_Handler(unittest.TestCase):
+    def setUp(self):
+
+        import socket
+        import sys
+
+        self.tester = TesterThread()
+        self.tester.start()
+
+        # Create a UDP socket
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        self.server_address = ('10.0.2.15', DoIP_Protocol.UDP_DISCOVERY)
+        
+    def tearDown(self):
+        self.tester.join()
+
+    def test_tester_socket_connection(self):
+        message = bytes.fromhex('01 fe 00 04 00 00 00 20')
+
+        try:
+            
+            # Send data
+            sent = self.sock.sendto(message, self.server_address)
+
+        finally:
+            self.sock.close()
+
 
 class Test_DoIP_Header_Handler_(unittest.TestCase):
     def setUp(self):
