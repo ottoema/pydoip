@@ -34,6 +34,10 @@ class Generic_DoIP_NACK_codes(Enum):
     Out_of_memory = 0x03
     Invalid_payload_length = 0x04
 
+class Further_Action_Required(Enum):
+    No_further_action_required = 0x00
+    Routing_activation_required_to_initiate_central_security = 0x10
+
 class DoIP_Header(object):
 
 
@@ -68,6 +72,50 @@ class DoIP_Header(object):
             return False
         return True
 
+class DoIP_Payload(object):
+    payload_type = None
+
+    def __init__(self):
+        if (not isinstance(self.payload_type,DoIP_payload_type)):
+            raise TypeError("DoIP_Payload not instansiated correctly through a subclass")
+    
+class DoIP_Message(object):
+    def __init__(self,header,payload):
+        self.header = header
+        self.payload = payload
+
+    @property
+    def header(self):
+        return self.__header
+
+    @property
+    def payload(self):
+        return self.__payload
+
+    @payload.setter
+    def payload(self,new_payload):
+        self.__payload = new_payload
+
+    @header.setter
+    def header(self,new_header):
+        if (not isinstance(new_header,DoIP_Header)):
+            raise TypeError("Header not a DoIP_Header")
+        self.__header = new_header
+
+class DoIP_VA_VIR(DoIP_Payload):
+    
+    def __init__(self,vin,logical_address,eid,gid,far,vin_gid_sync_status=0):
+        self.payload_type = DoIP_payload_type.Vehicle_announcement_message__vehicle_identification_response_message
+        super().__init__()
+
+        self.vin = vin
+        self.logical_address = logical_address
+        self.eid = eid
+        self.gid = gid
+        self.far = far
+        self.vin_gid_sync = vin_gid_sync_status
+
+
 class DoIP_Protocol(object):
 
     TCP_DATA = 13400                        #[DoIP-001]
@@ -75,4 +123,4 @@ class DoIP_Protocol(object):
     UDP_TEST_EQUIPMENT_REQUEST = 0          #[DoIP-135], dynamically assigned
 
     def __init__(self):
-        print("""I'm DOIP""")
+        pass
