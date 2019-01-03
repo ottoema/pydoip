@@ -5,6 +5,40 @@ from doip.payload_handlers import VA_VIR_Handler
 import socket
 import sys
 
+class DoIP_Header_Error(Exception):
+    """Base class for exceptions related to decoding a DoIP header."""
+    def __init__(self,nack_code):
+        if (not isinstance(nack_code,Generic_DoIP_NACK_codes)):
+            raise TypeError()
+        self.__nack_code = nack_code
+
+    def __str__(self):
+        return str(self.__nack_code)
+
+    @property
+    def nack_code(self):
+        return self.__nack_code
+
+class Incorrect_pattern_format_error(DoIP_Header_Error):
+    def __init__(self):
+        super().__init__(Generic_DoIP_NACK_codes.Incorrect_pattern_format)
+
+class Unknown_payload_type_error(DoIP_Header_Error):
+    def __init__(self):
+        super().__init__(Generic_DoIP_NACK_codes.Unknown_payload_type)
+ 
+class Message_too_large_error(DoIP_Header_Error):
+    def __init__(self):
+        super().__init__(Generic_DoIP_NACK_codes.Message_too_large)
+
+class Out_of_memory_error(DoIP_Header_Error):
+    def __init__(self):
+        super().__init__(Generic_DoIP_NACK_codes.Out_of_memory)
+
+class Invalid_payload_length_error(DoIP_Header_Error):
+    def __init__(self):
+        super().__init__(Generic_DoIP_NACK_codes.Invalid_payload_length)
+
 class DoIP_Header_Handler(object):
 
     MAXIMUM_PROCESSABLE_LENGTH = sys.maxsize
@@ -15,7 +49,7 @@ class DoIP_Header_Handler(object):
 
     def decode_header(self, data):
         import struct
-        print(data)
+        #print(data)
         protocol_version = struct.unpack('>B',data[0:1])[0]
         inverse_protocol_version = struct.unpack('>B',data[1:2])[0]
         payload_type = struct.unpack('>H',data[2:4])[0]
@@ -23,21 +57,19 @@ class DoIP_Header_Handler(object):
         payload_type_specific_message_content = data[8:]
 
         if not self._check_generic_doip_synchronization_pattern(protocol_version,inverse_protocol_version):
-            return Generic_DoIP_NACK_codes.Incorrect_pattern_format
+            raise Incorrect_pattern_format_error()
             
         if not self._check_payload_type(payload_type):
-            return Generic_DoIP_NACK_codes.Unknown_payload_type
+            raise Unknown_payload_type_error()
 
         if not self._check_whether_the_message_length_exceeds_the_maximum_processable_length(payload_length_header):
-            #Send generic DoIP header NACK (NACK code)
-            return Generic_DoIP_NACK_codes.Message_too_large
+            raise Message_too_large_error()
 
         if not self._check_current_doip_protocol_handler_memory():
-            #Send generic DoIP header NACK (NACK code)
-            return Generic_DoIP_NACK_codes.Out_of_memory
+            raise Out_of_memory_error()
 
         if not self._check_payload_type_specific_length(payload_type,payload_length_header,len(payload_type_specific_message_content)):
-            return Generic_DoIP_NACK_codes.Invalid_payload_length
+            raise Invalid_payload_length_error()
 
         return  DoIP_Message(DoIP_Header( DoIP_protocol_version(protocol_version),
                             DoIP_payload_type(payload_type),
@@ -109,24 +141,18 @@ class DoIP_Handler(object):
         print('received {} bytes from {}'.format(
             len(data), address))
         
-        message = self.header_handler.decode_header(data)
-
-        if (message.header in Generic_DoIP_NACK_codes):
-            print("Received DoIP NACK code")
-            self._tester_handle_generic_doip_nack(message.header)
+        try: 
+            message = self.header_handler.decode_header(data)
+        except DoIP_Header_Error as err:
+            print("Received DoIP NACK code: " + str(err))
+            self._tester_handle_generic_doip_nack(err.nack_code)
         else:
-
             print("DoIP header:")
             print("DoIP_protocol_version: " + message.header.protocol_version.name)
             print("DoIP inverse protocol version:" + str(message.header.inverse_protocol_version))
             print("DoIP payload type: " + message.header.payload_type.name)
             print("DoIP payload length: " + str(message.header.payload_length))
-        
-        print(message.payload)
-
-        self._tester_find_payload_handler(message)
-
-        
+            self._tester_find_payload_handler(message)
 
     def _tester_find_payload_handler(self,message):
         self._tester_payload_handlers[message.header.payload_type](message)

@@ -72,6 +72,12 @@ class DoIP_Header(object):
             return False
         return True
 
+    def __str__(self):
+        return """Protocol version: {0}
+                Inverse_protocol_version: {1}
+                Payload_type: {2}
+                Payload_length: {3}""".format(self.protocol_version,self.inverse_protocol_version,self.payload_type,self.payload_length)
+
 class DoIP_Payload(object):
     payload_type = None
 
