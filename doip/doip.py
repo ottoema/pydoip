@@ -93,12 +93,17 @@ class DoIP_Header(object):
                 Payload_length: {3}""".format(self.protocol_version,self.inverse_protocol_version,self.payload_type,self.payload_length)
 
 class DoIP_Payload(object):
-    payload_type = None
 
-    def __init__(self):
-        if (not isinstance(self.payload_type,DoIP_payload_type)):
+    def __init__(self,payload_type):
+        if (not isinstance(payload_type,DoIP_payload_type)):
             raise TypeError("DoIP_Payload not instansiated correctly through a subclass")
-    
+        else:
+            self.__payload_type = payload_type
+
+    @property
+    def payload_type(self):
+        return __payload_type
+
 class DoIP_Message(object):
     def __init__(self,header,payload):
         if (not isinstance(header,DoIP_Header)):
@@ -120,15 +125,38 @@ class DoIP_Message(object):
 class DoIP_VA_VIR(DoIP_Payload):
     
     def __init__(self,vin,logical_address,eid,gid,far,vin_gid_sync_status=0):
-        self.payload_type = DoIP_payload_type.Vehicle_announcement_message__vehicle_identification_response_message
-        super().__init__()
+        super().__init__(DoIP_payload_type.Vehicle_announcement_message__vehicle_identification_response_message)
 
-        self.vin = vin
-        self.logical_address = logical_address
-        self.eid = eid
-        self.gid = gid
-        self.far = far
-        self.vin_gid_sync = vin_gid_sync_status
+        self.__vin = vin
+        self.__logical_address = logical_address
+        self.__eid = eid
+        self.__gid = gid
+        self.__far = far
+        self.__vin_gid_sync = vin_gid_sync_status
+
+    @property
+    def vin(self):
+        return self.__vin
+    
+    @property
+    def logical_address(self):
+        return self.__logical_address
+
+    @property
+    def eid(self):
+        return self.__eid
+
+    @property
+    def gid(self):
+        return self.__gid
+
+    @property
+    def far(self):
+        return self.__far
+
+    @property
+    def vin_gid_sync(self):
+        return self.__vin_gid_sync
 
 
 class DoIP_Protocol(object):
