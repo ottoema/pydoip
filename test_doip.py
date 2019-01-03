@@ -16,6 +16,13 @@ class Test_DoIP_Message(unittest.TestCase):
         with self.assertRaises(AssertionError):
             message = DoIP_Message(header,payload_too_long)
 
+    def test_correct_message(self):
+        correct_payload = bytes.fromhex('00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00')
+        header = DoIP_Header(DoIP_protocol_version.DoIPISO1340022012,DoIP_payload_type.Vehicle_announcement_message__vehicle_identification_response_message,32)
+        message = DoIP_Message(header,correct_payload)
+        self.assertTrue(message.header == header,"Header not equal after creating DoIP_Message")
+        self.assertTrue(message.payload == correct_payload,"Payload not correct after creating DoIP_Message")
+
 class TesterThread(threading.Thread):
 
     def __init__(self):
