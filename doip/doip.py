@@ -40,19 +40,33 @@ class Further_Action_Required(Enum):
 
 class DoIP_Header(object):
 
-
     def __init__(self,protocol_version,payload_type,payload_length):
         
         if (isinstance(protocol_version,DoIP_protocol_version) and
             isinstance(payload_type,DoIP_payload_type)):   
 
-            self.protocol_version = protocol_version        
-            self.inverse_protocol_version = ~protocol_version.value
-            self.payload_type = payload_type
-            self.payload_length = payload_length
-            #self.payload_type_specific_message_content = payload_type_specific_message_content
+            self.__protocol_version = protocol_version        
+            self.__inverse_protocol_version = ~protocol_version.value
+            self.__payload_type = payload_type
+            self.__payload_length = payload_length
         else:
-            raise ValueError("DoIP header, invalid type.")
+            raise TypeError("DoIP header, invalid type.")
+    
+    @property
+    def protocol_version(self):
+        return self.__protocol_version
+    
+    @property
+    def inverse_protocol_version(self):
+        return self.__inverse_protocol_version
+
+    @property
+    def payload_type(self):
+        return self.__payload_type
+
+    @property
+    def payload_length(self):
+        return self.__payload_length
 
     def __eq__(self,other):
         if (isinstance(other,DoIP_Header) and    
