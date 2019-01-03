@@ -84,6 +84,9 @@ class DoIP_Message(object):
         self.header = header
         self.payload = payload
 
+        if (not self.header.payload_length == len(self.payload)):
+            raise AssertionError("Payload length according to header not matching with actual payload length.")
+
     @property
     def header(self):
         return self.__header
@@ -100,7 +103,8 @@ class DoIP_Message(object):
     def header(self,new_header):
         if (not isinstance(new_header,DoIP_Header)):
             raise TypeError("Header not a DoIP_Header")
-        self.__header = new_header
+        else:
+            self.__header = new_header
 
 class DoIP_VA_VIR(DoIP_Payload):
     

@@ -10,6 +10,12 @@ class Test_DoIP_Message(unittest.TestCase):
         with self.assertRaises(TypeError):
             message = DoIP_Message(12,bytes.fromhex('01 00'))
 
+    def test_wrong_payload_length(self):
+        payload_too_long = bytes.fromhex('FF 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00')
+        header = DoIP_Header(DoIP_protocol_version.DoIPISO1340022012,DoIP_payload_type.Vehicle_announcement_message__vehicle_identification_response_message,32)
+        with self.assertRaises(AssertionError):
+            message = DoIP_Message(header,payload_too_long)
+
 class TesterThread(threading.Thread):
 
     def __init__(self):
